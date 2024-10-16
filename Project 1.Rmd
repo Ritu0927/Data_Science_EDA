@@ -1,0 +1,52 @@
+---
+title: "Uncovering Racial and Demographic Trends in Chicago Police Stops: An Exploratory Analysis"
+author: "Team 3"
+output: 
+    html_document:
+      code_folding: hide
+      number_sections: TRUE
+      toc: yes
+      toc_depth: 3
+      toc_float: yes
+    pdf_document:
+      toc: yes
+      toc_depth: '3'
+date: "`r Sys.date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r basic_libraries, include=FALSE}
+# Importing required libraries for the EDA.
+library(ezids)
+library(ggplot2)
+```
+
+## Introduction 
+
+The Chicago Police Stops dataset provides valuable insights into the police stop practices in Chicago, with a particular focus on potential racial and demographic disparities. This dataset was collected as part of the Stanford Open Policing Project and contains information about police stops in the city. It includes various aspects of both the subjects and officers involved in the stops, such as race, age, gender, and outcomes like searches and arrests. The dataset serves as a foundation for examining how race, gender, and officer demographics influence the likelihood of being stopped, searched, or arrested during a police stop.
+
+## Source of the Dataset
+
+This dataset comes from the Stanford Open Policing Project. The variables in the dataset include:
+
+Variable |  Definition  
+  :-:    |  :-- 
+location | The location where the stop occurred
+subject_race |	The race of the person stopped
+subject_age | The age of the person stopped 
+subject_gender | The gender of the person stopped
+officer_race | The race of the officer conducting the stop
+officer_age |	The age of the officer 
+search_made |	Whether a search was conducted during the stop 
+arrest_made |	Whether an arrest was made during the stop 
+violation |	The violation that prompted the stop
+
+Source link: https://openpolicing.stanford.edu/data/
+
+```{r}
+
+
+```
