@@ -47,6 +47,36 @@ violation |	The violation that prompted the stop
 Source link: https://openpolicing.stanford.edu/data/
 
 ```{r}
+df=read.csv("Chicago Police Stops Dataset.csv")
+df
+```
 
+```{r}
+str(df)
+```
 
+```{r}
+summary(df)
+```
+
+```{r}
+colSums(is.na(df))
+```
+
+```{r}
+#removing missing values
+cleaned_df<-na.omit(df)
+```
+
+```{r}
+str(df)
+```
+
+```{r}
+summary(df)
+```
+
+```{r}
+nrow(cleaned_df)
+colSums(is.na(df))
 ```
