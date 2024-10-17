@@ -24,7 +24,7 @@ library(ezids)
 library(ggplot2)
 ```
 
-## Introduction 
+# Introduction 
 
 The Chicago Police Stops dataset provides valuable insights into the police stop practices in Chicago, with a particular focus on potential racial and demographic disparities. This dataset was collected as part of the Stanford Open Policing Project and contains information about police stops in the city. It includes various aspects of both the subjects and officers involved in the stops, such as race, age, gender, and outcomes like searches and arrests. The dataset serves as a foundation for examining how race, gender, and officer demographics influence the likelihood of being stopped, searched, or arrested during a police stop.
 
@@ -46,37 +46,40 @@ violation |	The violation that prompted the stop
 
 Source link: https://openpolicing.stanford.edu/data/
 
+## Glimplse of Dataset
+
 ```{r}
-df=read.csv("Chicago Police Stops Dataset.csv")
-df
+data=read.csv("Chicago Police Stops Dataset.csv")
+data
 ```
 
 ```{r}
-str(df)
+str(data)
 ```
 
 ```{r}
-summary(df)
+xkablesummary(data, title = "Summary of Dataset")
 ```
 
+## Cleaning Dataset
+
 ```{r}
-colSums(is.na(df))
+colSums(is.na(data))
 ```
 
 ```{r}
 #removing missing values
-cleaned_df<-na.omit(df)
+cleaned_data<-na.omit(data)
 ```
 
 ```{r}
-str(df)
+str(cleaned_data)
 ```
 
 ```{r}
-summary(df)
+xkablesummary(cleaned_data, title = "Summary of Cleaned Dataset")
 ```
 
 ```{r}
-nrow(cleaned_df)
-colSums(is.na(df))
+colSums(is.na(cleaned_data))
 ```
