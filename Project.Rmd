@@ -1,0 +1,146 @@
+---
+title: "Uncovering Racial and Demographic Trends in Chicago Police Stops: An Exploratory Analysis"
+author: "Team 3"
+output: 
+    html_document:
+      code_folding: hide
+      number_sections: TRUE
+      toc: yes
+      toc_depth: 3
+      toc_float: yes
+    pdf_document:
+      toc: yes
+      toc_depth: '3'
+date: "`r Sys.date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r basic_libraries, include=FALSE}
+# Importing required libraries for the EDA.
+library(ezids)
+library(ggplot2)
+```
+
+# Introduction 
+
+The Chicago Police Stops dataset provides valuable insights into the police stop practices in Chicago, with a particular focus on potential racial and demographic disparities. This dataset was collected as part of the Stanford Open Policing Project and contains information about police stops in the city. It includes various aspects of both the subjects and officers involved in the stops, such as race, age, gender, and outcomes like searches and arrests. The dataset serves as a foundation for examining how race, gender, and officer demographics influence the likelihood of being stopped, searched, or arrested during a police stop.
+
+## Source of the Dataset
+
+This dataset comes from the Stanford Open Policing Project. The variables in the dataset include:
+
+Variable |  Definition  
+  :-:    |  :-- 
+location | The location where the stop occurred
+subject_race |	The race of the person stopped
+subject_age | The age of the person stopped 
+subject_gender | The gender of the person stopped
+officer_race | The race of the officer conducting the stop
+officer_age |	The age of the officer 
+search_made |	Whether a search was conducted during the stop 
+arrest_made |	Whether an arrest was made during the stop 
+violation |	The violation that prompted the stop
+
+Source link: https://openpolicing.stanford.edu/data/
+
+## Glimplse of Dataset
+
+```{r}
+data=read.csv("Chicago Police Stops Dataset.csv")
+data
+```
+```{r}
+str(data)
+```
+
+```{r}
+xkablesummary(data, title = "Summary of Dataset")
+```
+
+## Cleaning Dataset
+
+```{r}
+colSums(is.na(data))
+```
+
+```{r}
+#removing missing values
+cleaned_data<-na.omit(data)
+```
+
+```{r}
+str(cleaned_data)
+```
+```{r}
+xkablesummary(cleaned_data, title = "Summary of Cleaned Dataset")
+```
+
+```{r}
+colSums(is.na(cleaned_data))
+```
+# Just an initial exploration
+```{r}
+barplot(table(cleaned_data$subject_race), main="Distribution of Stops by Race", col="lightblue")
+```
+
+# # Detecting and Removing Outliers
+```{r}
+boxplot(cleaned_data$subject_age ~ cleaned_data$subject_race, main="Age Distribution by Race")
+```
+
+```{r}
+boxplot(cleaned_data$officer_age ~ cleaned_data$subject_race, main="Officer Age vs Subject Race")
+```
+
+```{r}
+cleansubject_age=outlierKD2(cleaned_data,subject_age,rm=TRUE,qqplt = TRUE)
+```
+
+```{r}
+cleanofficer_age=outlierKD2(cleaned_data,officer_age,rm=TRUE,qqplt = TRUE)
+```
+
+# 'outlierKD2' has identified and removed outliers, but it did not actually drop the rows from the dataframe. The outlierKD2 function only returns a modified column but does not update the dataframe in place. We manually remove the rows that contain outliers from cleaned_data dataframe.
+```{r}
+# Removing outliers from subject_age using IQR
+Q1_subject <- quantile(cleaned_data$subject_age, 0.25)
+Q3_subject <- quantile(cleaned_data$subject_age, 0.75)
+IQR_subject <- Q3_subject - Q1_subject
+
+# Define lower and upper bounds for subject_age
+lower_bound_subject <- Q1_subject - 1.5 * IQR_subject
+upper_bound_subject <- Q3_subject + 1.5 * IQR_subject
+
+# Filter out rows with outliers in subject_age
+cleaned_data <- cleaned_data[cleaned_data$subject_age >= lower_bound_subject & cleaned_data$subject_age <= upper_bound_subject, ]
+
+# Removing outliers from officer_age using IQR
+Q1_officer <- quantile(cleaned_data$officer_age, 0.25)
+Q3_officer <- quantile(cleaned_data$officer_age, 0.75)
+IQR_officer <- Q3_officer - Q1_officer
+
+# Define lower and upper bounds for officer_age
+lower_bound_officer <- Q1_officer - 1.5 * IQR_officer
+upper_bound_officer <- Q3_officer + 1.5 * IQR_officer
+
+# Filter out rows with outliers in officer_age
+cleaned_data <- cleaned_data[cleaned_data$officer_age >= lower_bound_officer & cleaned_data$officer_age <= upper_bound_officer, ]
+
+```
+
+# Checking the number of observations to confirm that outliers have been removed
+```{r}
+nrow(cleaned_data)
+```
+# Checking the summary statistics to confirm that the extreme values have been removed
+```{r}
+summary(cleaned_data$subject_age)
+```
+
+```{r}
+summary(cleaned_data$officer_age)
+```
+
