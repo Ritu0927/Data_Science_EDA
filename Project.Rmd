@@ -153,3 +153,22 @@ summary(cleaned_data$officer_age)
 # Removing rows where subject_race or officer_race is "unknown"
 cleaned_data <- cleaned_data[!(cleaned_data$subject_race == "unknown" | cleaned_data$officer_race == "unknown"), ]
 ```
+
+```{r}
+# Ensuring subject_race and officer_race are factors
+cleaned_data$subject_race <- as.factor(cleaned_data$subject_race)
+cleaned_data$officer_race <- as.factor(cleaned_data$officer_race)
+```
+
+```{r}
+# Chi-Square test for association between subject_race and officer_race
+chisq_result <- chisq.test(table(cleaned_data$subject_race, cleaned_data$officer_race))
+
+print(chisq_result)
+```
+```{r}
+# Performing ANOVA to check if officer race impacts subject race in determining arrests
+anova_result <- aov(officer_age ~ subject_race * officer_race, data = cleaned_data)
+
+summary(anova_result)
+```
