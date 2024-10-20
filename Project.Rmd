@@ -149,16 +149,28 @@ summary(cleaned_data$subject_age)
 ```{r}
 summary(cleaned_data$officer_age)
 ```
+
 ```{r}
 # Removing rows where subject_race or officer_race is "unknown"
 cleaned_data <- cleaned_data[!(cleaned_data$subject_race == "unknown" | cleaned_data$officer_race == "unknown"), ]
 ```
 
+# Hypothesis Testing 
 ```{r}
 # Ensuring subject_race and officer_race are factors
 cleaned_data$subject_race <- as.factor(cleaned_data$subject_race)
 cleaned_data$officer_race <- as.factor(cleaned_data$officer_race)
 ```
+
+*Disclaimer: Our dataset contained only cases where arrests were made (i.e., the arrest_made column only has "TRUE" values). The lack of variation (no FALSE values in arrest_made) made it hard to explore different hypotheses.*
+
+However, we still did proceed with Chi-Square and ANOVA tests to explore relationships between subject race and officer race. 
+
+## Chi - Square Test
+
+*Null Hypothesis (H₀)*: There is no association between the subject's race and the officer's race during police stops where arrests were made.
+
+*Alternative Hypothesis (H₁)*: There is a significant association between the subject's race and the officer's race during police stops where arrests were made.
 
 ```{r}
 # Chi-Square test for association between subject_race and officer_race
@@ -166,9 +178,28 @@ chisq_result <- chisq.test(table(cleaned_data$subject_race, cleaned_data$officer
 
 print(chisq_result)
 ```
+
+The Chi-Square test was performed to assess whether there is an association between subject race and officer race.
+
+*Note: The warning sign typically occurs when the expected frequencies in some categories are very low. The test can still provide meaningful insights, but we keep limitation in mind.*
+
+The *p-value* is *extremely small* (less than 0.05), hence we *reject* the *null hypothesis*.
+
+There is a significant association between subject race and officer race. It implies that an officer's race may influence the decision to arrest subjects based on their race.
+
+## ANOVA Test
+
+*Null Hypothesis (H₀)*: There is no significant effect of subject race, officer race, or their interaction on the likelihood of arrests during police stops.
+
+*Alternative Hypothesis (H₁)*: Subject race, officer race, or their interaction has a significant effect on the likelihood of arrests during police stops. 
+
 ```{r}
 # Performing ANOVA to check if officer race impacts subject race in determining arrests
 anova_result <- aov(officer_age ~ subject_race * officer_race, data = cleaned_data)
 
 summary(anova_result)
 ```
+
+Since the *p-values* for subject race, officer race, and their interaction are all *highly significant* (p < 2e-16), we *reject the null hypothesis*. 
+
+Thus, we conclude that there is strong evidence to suggest that the race of the subject, the race of the officer, and the interaction between the two significantly impact the outcome of arrests during police stops.
