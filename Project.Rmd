@@ -40,6 +40,7 @@ subject_age | The age of the person stopped
 subject_gender | The gender of the person stopped
 officer_race | The race of the officer conducting the stop
 officer_age |	The age of the officer 
+officer_gender | The gender of the officer stopping
 search_made |	Whether a search was conducted during the stop 
 arrest_made |	Whether an arrest was made during the stop 
 violation |	The violation that prompted the stop
@@ -86,9 +87,29 @@ Look into null values of dataset.
 ```{r}
 colSums(is.na(cleaned_data))
 ```
+
 # Just An Initial Exploration
 ```{r}
-barplot(table(cleaned_data$subject_race), main="Distribution of Stops by Race", col="lightblue")
+barplot(table(cleaned_data$subject_race), main="Distribution of Stops bySubject Race", col="lightblue", xlab="Subject Race", ylab="Count")
+```
+
+```{r}
+barplot(table(cleaned_data$officer_race), main="Distribution of Stops by Officer Race", col="lightcoral", xlab="Officer Race", ylab="Count")
+```
+```{r}
+barplot(table(cleaned_data$subject_sex), main="Distribution of Stops by Subject Sex", 
+col="lightgreen", xlab="Subject Sex", ylab="Count")
+```
+```{r}
+barplot(table(cleaned_data$officer_sex), main="Distribution of Stops by Officer Sex", col="lightpink", xlab="Officer Sex", ylab="Count")
+```
+```{r}
+hist(cleaned_data$subject_age, main="Distribution of Subject Age", col="lightyellow", xlab="Subject Age", ylab="Frequency", breaks=10)
+```
+
+```{r}
+hist(cleaned_data$officer_age, main="Distribution of Officer Age", col="lightblue", 
+xlab="Officer Age", ylab="Frequency")
 ```
 
 # Detecting and Removing Outliers
@@ -155,6 +176,81 @@ summary(cleaned_data$officer_age)
 cleaned_data <- cleaned_data[!(cleaned_data$subject_race == "unknown" | cleaned_data$officer_race == "unknown"), ]
 ```
 
+# Visualization
+
+## Bar Plot
+```{r}
+ggplot(cleaned_data, aes(x = subject_race)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Police Stops by Subject Race", x = "Subject Race", y = "Count") +
+  theme_minimal()
+```
+
+The above chart shows the distribution of police stops by subject race, with Black subjects having the highest count, followed by Hispanic and White subjects. The number of stops for Asians and Other races is significantly lower in comparison.
+
+```{r}
+ggplot(cleaned_data, aes(x = officer_race)) +
+  geom_bar(fill = "coral", color = "black") +
+  labs(title = "Distribution of Police Stops by Officer Race", x = "Officer Race", y = "Count") +
+  theme_minimal()
+```
+
+The above chart illustrates the distribution of police stops by officer race. It shows that white officers are involved in the highest number of police stops, followed by Hispanic and Black officers. Asian officers are involved in a relatively low number of stops, and the "other" category has an almost negligible count.
+
+## Violin Plot
+```{r}
+ggplot(cleaned_data, aes(x = subject_race, y = subject_age, fill = subject_sex)) +
+  geom_violin(scale = "width", trim = FALSE) +
+  geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
+  labs(title = "Distribution of Subject Age by Race and Gender",
+       x = "Subject Race", y = "Subject Age", fill = "Subject Gender") +
+  theme_minimal()
+```
+
+This violin plot illustrates distribution of subject age across different racial groups. The wider parts of the violin indicate higher densities of points; the narrow part indicates low-density concentrations for points at a certain age. For the four groups represented, the median age is mainly between 20 and 40 years, with expanding age variations above and below this range.
+
+## Box Plot
+```{r}
+ggplot(cleaned_data, aes(x = officer_race, y = officer_age, fill = officer_race)) +
+  geom_boxplot() +
+  labs(title = "Age Distribution by Officer Race", x = "Officer Race", y = "Officer Age") +
+  theme_minimal()
+```
+
+The box plot shows distribution of subject age across different racial groups. The median age for all groups is somewhere in the early and mid-40s; Black officers are the exception, with a little bit higher median age than others in all the groups. Asian among all and Hispanic officers demonstrate narrower distributions in terms of age, with most officers being close to age 40. The variations among white and black officers are the largest in regard to age, with older officers being older and younger ones not being younger, as seen from the wider age range. Outliers also exist with respect to age, especially for Asian and White officers, indicating an existence of cases of age concentration towards the upper side of the spectrum. 
+
+```{r}
+# Assuming your dataset is called 'arrest_data' and has columns: OfficerGender, OfficerAge, and SubjectRace
+ggplot(cleaned_data, aes(x = officer_age, fill = subject_race)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ officer_sex) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Proportion of Subject Race by Officer Age and Gender",
+       x = "Officer Age", y = "Proportion of Subjects Arrested",
+       fill = "Subject Race") +
+  theme_minimal()
+```
+
+## Heatmap
+```{r}
+# Create a table of counts for subject race and officer race
+race_correlation <- as.data.frame(table(cleaned_data$subject_race, cleaned_data$officer_race))
+```
+
+```{r}
+# Plot heatmap
+ggplot(race_correlation, aes(x = Var1, y = Var2, fill = Freq)) +
+  geom_tile(color = "black") +  # Add black borders
+  scale_fill_gradient(low = "white", high = "lightblue") +  # Subtle color scheme
+  labs(title = "Correlation between Subject and Officer Race", 
+       x = "Subject Race", 
+       y = "Officer Race", 
+       fill = "Count") +
+  theme_minimal()
+```
+
+The heatmap reveals the correlation between officer race and the race of subjects they interacted with. Darker blue colors signify greater frequency of occurrences. The White officers significantly interacted with Black subjects. Interaction with subjects from among the other officer races shows weaker correlations, evidenced by the lighter red coloration of the cells in the matrix. Hispanic officers tend to stop more Hispanic subjects, while other race combinations occur less frequently, indicating potential racial correlations in police stops.
+  
 # Hypothesis Testing 
 ```{r}
 # Ensuring subject_race and officer_race are factors
@@ -204,60 +300,19 @@ Since the *p-values* for subject race, officer race, and their interaction are a
 
 Thus, we conclude that there is strong evidence to suggest that the race of the subject, the race of the officer, and the interaction between the two significantly impact the outcome of arrests during police stops.
 
-# Visualization
+## Chi-square tets
 
-## Bar PLot
-```{r}
-ggplot(cleaned_data, aes(x = subject_race)) +
-  geom_bar(fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Police Stops by Subject Race", x = "Subject Race", y = "Count") +
-  theme_minimal()
-```
-The above chart shows the distribution of police stops by subject race, with Black subjects having the highest count, followed by Hispanic and White subjects. The number of stops for Asians and Other races is significantly lower in comparison.
+Null Hypothesis (H₀): There is no significant association between the gender of the officer and the race of the arrested subject.
+
+Alternative Hypothesis (H₁): There is a significant association between the gender of the officer and the race of the arrested subject.
 
 ```{r}
-ggplot(cleaned_data, aes(x = officer_race)) +
-  geom_bar(fill = "coral", color = "black") +
-  labs(title = "Distribution of Police Stops by Officer Race", x = "Officer Race", y = "Count") +
-  theme_minimal()
+# Chi-Square test for association between officer_sex and subject_race
+
+chisq_result <- chisq.test(table(cleaned_data$officer_sex, cleaned_data$subject_race))
+
+print(chisq_result)
 ```
+Since the *p-values* is very small (less than 0.05), we *reject the null hypothesis*. 
 
-The above chart illustrates the distribution of police stops by officer race. It shows that white officers are involved in the highest number of police stops, followed by Hispanic and Black officers. Asian officers are involved in a relatively low number of stops, and the "other" category has an almost negligible count.
-
-## Violoin Plot
-```{r}
-ggplot(cleaned_data, aes(x = subject_race, y = subject_age, fill = subject_race)) +
-  geom_violin(trim = FALSE) +
-  labs(title = "Age Distribution by Subject Race", x = "Subject Race", y = "Subject Age") +
-  theme_minimal()
-```
-This violin plot illustrates distribution of subject age across different racial groups. The wider parts of the violin indicate higher densities of points; the narrow part indicates low-density concentrations for points at a certain age. For the four groups represented, the median age is mainly between 20 and 40 years, with expanding age variations above and below this range.
-
-## Box Plot
-```{r}
-ggplot(cleaned_data, aes(x = officer_race, y = officer_age, fill = officer_race)) +
-  geom_boxplot() +
-  labs(title = "Age Distribution by Officer Race", x = "Officer Race", y = "Officer Age") +
-  theme_minimal()
-```
-
-The box plot shows distribution of subject age across different racial groups. The median age for all groups is somewhere in the early and mid-40s; Black officers are the exception, with a little bit higher median age than others in all the groups. Asian among all and Hispanic officers demonstrate narrower distributions in terms of age, with most officers being close to age 40. The variations among white and black officers are the largest in regard to age, with older officers being older and younger ones not being younger, as seen from the wider age range. Outliers also exist with respect to age, especially for Asian and White officers, indicating an existence of cases of age concentration towards the upper side of the spectrum. 
-
-## Heatmap
-```{r}
-# Create a table of counts for subject race and officer race
-race_correlation <- as.data.frame(table(cleaned_data$subject_race, cleaned_data$officer_race))
-```
-
-```{r}
-# Plot heatmap
-ggplot(race_correlation, aes(x = Var1, y = Var2, fill = Freq)) +
-  geom_tile() +
-  scale_fill_gradient(low = "white", high = "red") +
-  labs(title = "Correlation between Subject and Officer Race", x = "Subject Race", y = "Officer Race", fill = "Count") +
-  theme_minimal()
-```
-
-The heatmap reveals the correlation between officer race and the race of subjects they interacted with. Darker red colors signify greater frequency of occurrences. The White officers significantly interacted with Black subjects. Interaction with subjects from among the other officer races shows weaker correlations, evidenced by the lighter red coloration of the cells in the matrix. Hispanic officers tend to stop more Hispanic subjects, while other race combinations occur less frequently, indicating potential racial correlations in police stops.
-  
-
+Thus, there is a significant association between the gender of the officer and the race of the arrested subject. This suggests that the likelihood of arrest may vary depending on the officer's gender in relation to the subject's race.
