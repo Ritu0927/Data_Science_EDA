@@ -91,7 +91,7 @@ cleaned_data<-na.omit(data2)
 ```
 
 ## Post Removal of Null Values
-After we removed the null values, we glimpse into the structure and sumary of dataset.
+After we removed the null values, we glimpse into the structure and summary of dataset.
 ```{r}
 str(cleaned_data)
 ```
@@ -102,4 +102,92 @@ xkablesummary(cleaned_data, title = "Summary of Cleaned Dataset")
 Cross checking for null values of dataset.
 ```{r}
 colSums(is.na(cleaned_data))
+```
+
+# Detecting & Removing Outliers
+```{r}
+ggplot(cleaned_data, aes(x = subject_race, y = subject_age)) +
+  geom_boxplot(fill = "lightblue", color = "darkblue") +
+  labs(title = "Subject Age Distribution by Race", x = "Subject Race", y = "Subject Age") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = officer_race, y = officer_age)) +
+  geom_boxplot(fill = "lightblue", color = "darkblue") +
+  labs(title = "Subject Age Distribution by Race", x = "Officer Race", y = "Officer Age") +
+  theme_minimal()
+```
+
+```{r}
+cleansubject_age=outlierKD2(cleaned_data,subject_age,rm=TRUE,qqplt = TRUE)
+```
+
+```{r}
+cleanofficer_age=outlierKD2(cleaned_data,officer_age,rm=TRUE,qqplt = TRUE)
+```
+
+**'outlierKD2'** has identified and removed outliers, but it did not actually drop the rows from the dataframe. The outlierKD2 function only returns a modified column but does not update the dataframe in place. We manually remove the rows that contain outliers from cleaned_data dataframe.
+
+```{r}
+
+Q1_subject <- quantile(cleaned_data$subject_age, 0.25)
+Q3_subject <- quantile(cleaned_data$subject_age, 0.75)
+IQR_subject <- Q3_subject - Q1_subject
+
+
+lower_bound_subject <- Q1_subject - 1.5 * IQR_subject
+upper_bound_subject <- Q3_subject + 1.5 * IQR_subject
+
+
+cleaned_data <- cleaned_data[cleaned_data$subject_age >= lower_bound_subject & cleaned_data$subject_age <= upper_bound_subject, ]
+```
+
+```{r}
+Q1_officer <- quantile(cleaned_data$officer_age, 0.25)
+Q3_officer <- quantile(cleaned_data$officer_age, 0.75)
+IQR_officer <- Q3_officer - Q1_officer
+
+lower_bound_officer <- Q1_officer - 1.5 * IQR_officer
+upper_bound_officer <- Q3_officer + 1.5 * IQR_officer
+
+cleaned_data <- cleaned_data[cleaned_data$officer_age >= lower_bound_officer & cleaned_data$officer_age <= upper_bound_officer, ]
+```
+
+## Outliers Are Removed
+```{r}
+nrow(cleaned_data)
+```
+
+## Extreme Values Removed
+```{r}
+summary(cleaned_data$subject_age)
+```
+
+```{r}
+summary(cleaned_data$officer_age)
+```
+
+```{r}
+top_violations <- cleaned_data %>%
+  count(violation, sort = TRUE) %>%    
+  top_n(10, n)                        
+
+
+final_data <- cleaned_data %>%
+  filter(violation %in% top_violations$violation)
+```
+
+We filtered the dataset to retain records of top 10 violations.
+
+```{r}
+str(final_data)
+```
+
+```{r}
+head(final_data, 10)
+```
+
+```{r}
+print(unique(final_data$violation))
 ```
