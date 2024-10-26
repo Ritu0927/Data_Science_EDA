@@ -110,6 +110,7 @@ ggplot(cleaned_data, aes(x = subject_race, y = subject_age)) +
   geom_boxplot(fill = "lightblue", color = "darkblue") +
   labs(title = "Subject Age Distribution by Race", x = "Subject Race", y = "Subject Age") +
   theme_minimal()
+
 ```
 
 ```{r}
@@ -191,3 +192,124 @@ head(final_data, 10)
 ```{r}
 print(unique(final_data$violation))
 ```
+
+# Visualization
+
+## Bar Plot
+```{r}
+ggplot(final_data, aes(x = subject_race)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Police Stops by Subject Race", x = "Subject Race", y = "Count") +
+  theme_minimal()
+```
+
+The above bar plot shows the distribution of police stops by subject race, with African/American subjects having the highest count of arrests, followed by Hispanic/Latino and Caucasian subjects. The number of stops for Asian/Pacific Islander is significantly lower in comparison.
+
+```{r}
+ggplot(final_data, aes(x = officer_race)) +
+  geom_bar(fill = "coral", color = "black") +
+  labs(title = "Distribution of Police Stops by Officer Race", x = "Officer Race", y = "Count") +
+  theme_minimal()
+```
+
+The above bar plot illustrates the distribution of police stops by officer race. It shows that Caucasian officers are involved in the highest number of police stops, followed by Hispanic/Latino and African American officers. Asian/Pacific Islander officers are involved in a relatively low number of stops.
+
+## Violin Plot
+```{r}
+ggplot(final_data, aes(x = subject_race, y = subject_age, fill = subject_race)) +
+  geom_violin(scale = "width", trim = FALSE) +
+  geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
+  labs(title = "Distribution of Subject Age by Race",
+       x = "Subject Race", y = "Subject Age", fill ="Subject_Race") +
+  theme_minimal()
+```
+
+This violin plot showcases distribution of subject age across different racial groups. The wider parts of the violin indicate higher densities of points; the narrow part indicates low-density concentrations for points at a certain age. For the four groups represented, the median age is mainly between 30 and 40 years. Asian/Pacific Islander subjects have the widest age spread, with some older outliers, while the Hispanic/Latino subjects have more concentrated and younger age range. 
+
+## Box Plot
+```{r}
+ggplot(final_data, aes(x = officer_race, y = officer_age, fill = officer_race)) +
+  geom_boxplot() +
+  labs(title = "Distribution by Officer Age by Race", x = "Officer Race", y = "Officer Age") +
+  theme_minimal()
+```
+
+The box plot shows distribution of officer age across different racial groups. The median age for all groups is somewhere in the early and mid-40s; African American officers are the exception, with a little bit higher median age than others. Asian/Pacific Islander and Hispanic/Latino officers demonstrate narrower distributions in terms of age, with most officers being close to age 40.  
+
+## Stacked Bar Plot
+```{r}
+ggplot(final_data, aes(x = officer_age, fill = subject_race)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ officer_sex) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Proportion of Subject Race by Officer Age and Gender",
+       x = "Officer Age", y = "Proportion of Subjects Arrested",
+       fill = "Subject Race") +
+  theme_minimal()
+```
+
+The above stacked bar plot shows the proportion of different racial groups arrested by the age and gender of officers. In general, for both female and male officers, younger officers arrested more African-Americans and Hispanics/Latinos while older ones arrested an increased proportion of Caucasians and Asian/Pacific Islanders. Overall, this means that the racial distribution of arrests shifts with the age of the officer and varies slightly by gender.
+
+## Heatmap
+```{r}
+race_correlation <- as.data.frame(table(final_data$subject_race, final_data$officer_race))
+```
+
+```{r}
+ggplot(race_correlation, aes(x = Var1, y = Var2, fill = Freq)) +
+  geom_tile(color = "black") +  
+  scale_fill_gradient(low = "white", high = "lightblue") +  
+  labs(title = "Correlation between Subject and Officer Race", 
+       x = "Subject Race", 
+       y = "Officer Race", 
+       fill = "Count") +
+  theme_minimal()
+```
+
+The heatmap reveals the correlation between officer race and the race of subjects they interacted with. Darker blue colors signify greater frequency of occurrences. The Caucasian officers significantly interacted with African American subjects. Interaction with subjects from among the other officer races shows weaker correlations, evidenced by the lighter blue coloration of the cells in the matrix. Hispanic/Latino officers tend to stop more Hispanic/Latino subjects, while other race combinations occur less frequently, indicating potential racial correlations in police stops.
+
+## Maps
+```{r}
+violation_pal <- colorFactor(palette = "Set3", domain = final_data$violation)
+
+leaflet(data = final_data) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    lng = ~lng, lat = ~lat, 
+    color = ~violation_pal(violation),  
+    popup = ~paste("Violation:", violation, "<br>",
+                   "Subject Age:", subject_age, "<br>",
+                   "Officer Age:", officer_age),
+    radius = 5,
+    stroke = FALSE,
+    fillOpacity = 0.8
+  ) %>%
+  addLegend(
+    position = "bottomright", 
+    pal = violation_pal, 
+    values = ~violation,
+    title = "Violation Type"
+  )
+```
+The map above gives us a good view of the top 10 violations across the city.
+
+## Bar Plot
+```{r}
+top_race_per_violation <- final_data %>%
+  group_by(violation, subject_race) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  arrange(desc(count)) %>%
+  slice_max(order_by = count, by = violation, n = 1)
+
+ggplot(top_race_per_violation, aes(x = violation, y = count, fill = violation)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Top Subject Race by Violation",
+       x = "Violation Type",
+       y = "Count") +
+  theme_minimal() +
+  geom_text(aes(label = subject_race), angle = 90, vjust = -0.5, hjust = 0.5) +  
+  theme(axis.text.x = element_blank(),  
+        axis.title.x = element_blank()) +  
+  scale_fill_brewer(palette = "Set3")
+```
+The above bar plot shows the subject race violating specific rules highest for each type of violation.
