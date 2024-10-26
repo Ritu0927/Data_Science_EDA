@@ -19,14 +19,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r basic_libraries, include=FALSE}
-# Importing required libraries for the EDA.
 library(ezids)
 library(ggplot2)
+library(dplyr)
+library(leaflet)
 ```
 
 # Introduction 
 
-The Chicago Police Stops dataset provides valuable insights into the police stop practices in Chicago, with a particular focus on potential racial and demographic disparities. This dataset was collected as part of the Stanford Open Policing Project and contains information about police stops in the city. It includes various aspects of both the subjects and officers involved in the stops, such as race, age, gender, and outcomes like searches and arrests. The dataset serves as a foundation for examining how race, gender, and officer demographics influence the likelihood of being stopped, searched, or arrested during a police stop.
+The Chicago Police Stops dataset provides insights into the police stop practices in Chicago, focusing on location and potential racial and demographic disparities. This dataset was collected as part of the Stanford Open Policing Project and contains information about police stops in the city. Stanford Open Policing Project's goal is to create a repository detailing the interactions between police officers and the public. It includes various aspects of the subjects and officers involved in the stops, such as race, age, gender, and outcomes like searches and arrests. Also includes the type of violation and location where it was committed. The dataset serves as a foundation for examining how race, gender, violation, and officer demographics influence the likelihood of being stopped, searched, or arrested during a police stop.
 
 ## Source of the Dataset
 
@@ -35,6 +36,8 @@ This dataset comes from the Stanford Open Policing Project. The variables in the
 Variable |  Definition  
   :-:    |  :-- 
 location | The location where the stop occurred
+lat | The latitude of location
+lng | The longitude of location
 subject_race |	The race of the person stopped
 subject_age | The age of the person stopped 
 subject_gender | The gender of the person stopped
@@ -47,13 +50,21 @@ violation |	The violation that prompted the stop
 
 Source link: https://openpolicing.stanford.edu/data/
 
+## SMART Questions
+
+**1)** How do the subject's race and the officer's race influence the likelihood of arrest during police stops in Chicago, as observed in the dataset ?
+
+**2)** How does the officer's gender influence the likelihood of arresting individuals of different races during police stops in Chicago, as measured by the association between officer gender and subject race in the arrest dataset?
+
 ## Glimplse of Dataset
 
 ```{r}
-data=read.csv("Chicago Police Stops Dataset.csv")
-head(data, 10)
+data=read.csv("il_chicago_2023_01_26.csv")
+head(data, 5)
 ```
+
 ## Structure and Summary of Dataset
+
 ```{r}
 str(data)
 ```
@@ -61,258 +72,34 @@ str(data)
 ```{r}
 xkablesummary(data, title = "Summary of Dataset")
 ```
-
 # Cleaning Dataset
-
+```{r}
+data2 <- data[!(data$subject_race %in% c("unknown", "other") | data$officer_race %in% c("unknown", "other")), ]
+```
+ 
+We removed "unknown" and "other" races from subject_race and officer_race.
+```{r}
+nrow(data2)
+```
 ## Null Values
 ```{r}
-colSums(is.na(data))
+colSums(is.na(data2))
 ```
-
 ```{r}
 #removing missing values
-cleaned_data<-na.omit(data)
+cleaned_data<-na.omit(data2)
 ```
 
 ## Post Removal of Null Values
-Look into the structure of dataset.
+After we removed the null values, we glimpse into the structure and sumary of dataset.
 ```{r}
 str(cleaned_data)
 ```
-Look into summary of dataset.
 ```{r}
 xkablesummary(cleaned_data, title = "Summary of Cleaned Dataset")
 ```
-Look into null values of dataset.
+
+Cross checking for null values of dataset.
 ```{r}
 colSums(is.na(cleaned_data))
 ```
-
-# Just An Initial Exploration
-```{r}
-barplot(table(cleaned_data$subject_race), main="Distribution of Stops bySubject Race", col="lightblue", xlab="Subject Race", ylab="Count")
-```
-
-```{r}
-barplot(table(cleaned_data$officer_race), main="Distribution of Stops by Officer Race", col="lightcoral", xlab="Officer Race", ylab="Count")
-```
-```{r}
-barplot(table(cleaned_data$subject_sex), main="Distribution of Stops by Subject Sex", 
-col="lightgreen", xlab="Subject Sex", ylab="Count")
-```
-```{r}
-barplot(table(cleaned_data$officer_sex), main="Distribution of Stops by Officer Sex", col="lightpink", xlab="Officer Sex", ylab="Count")
-```
-```{r}
-hist(cleaned_data$subject_age, main="Distribution of Subject Age", col="lightyellow", xlab="Subject Age", ylab="Frequency", breaks=10)
-```
-
-```{r}
-hist(cleaned_data$officer_age, main="Distribution of Officer Age", col="lightblue", 
-xlab="Officer Age", ylab="Frequency")
-```
-
-# Detecting and Removing Outliers
-```{r}
-boxplot(cleaned_data$subject_age ~ cleaned_data$subject_race, main="Subject Age Distribution by Race")
-```
-
-```{r}
-boxplot(cleaned_data$officer_age ~ cleaned_data$officer_race, main="Officer Age Distribution by Age")
-```
-
-```{r}
-cleansubject_age=outlierKD2(cleaned_data,subject_age,rm=TRUE,qqplt = TRUE)
-```
-
-```{r}
-cleanofficer_age=outlierKD2(cleaned_data,officer_age,rm=TRUE,qqplt = TRUE)
-```
-
-**'outlierKD2'** has identified and removed outliers, but it did not actually drop the rows from the dataframe. The outlierKD2 function only returns a modified column but does not update the dataframe in place. We manually remove the rows that contain outliers from cleaned_data dataframe.
-
-```{r}
-# Removing outliers from subject_age using IQR
-Q1_subject <- quantile(cleaned_data$subject_age, 0.25)
-Q3_subject <- quantile(cleaned_data$subject_age, 0.75)
-IQR_subject <- Q3_subject - Q1_subject
-
-# Define lower and upper bounds for subject_age
-lower_bound_subject <- Q1_subject - 1.5 * IQR_subject
-upper_bound_subject <- Q3_subject + 1.5 * IQR_subject
-
-# Filter out rows with outliers in subject_age
-cleaned_data <- cleaned_data[cleaned_data$subject_age >= lower_bound_subject & cleaned_data$subject_age <= upper_bound_subject, ]
-
-# Removing outliers from officer_age using IQR
-Q1_officer <- quantile(cleaned_data$officer_age, 0.25)
-Q3_officer <- quantile(cleaned_data$officer_age, 0.75)
-IQR_officer <- Q3_officer - Q1_officer
-
-# Define lower and upper bounds for officer_age
-lower_bound_officer <- Q1_officer - 1.5 * IQR_officer
-upper_bound_officer <- Q3_officer + 1.5 * IQR_officer
-
-# Filter out rows with outliers in officer_age
-cleaned_data <- cleaned_data[cleaned_data$officer_age >= lower_bound_officer & cleaned_data$officer_age <= upper_bound_officer, ]
-
-```
-
-## Outliers Are Removed
-```{r}
-nrow(cleaned_data)
-```
-## Extreme Values Removed
-```{r}
-summary(cleaned_data$subject_age)
-```
-
-```{r}
-summary(cleaned_data$officer_age)
-```
-
-```{r}
-# Removing rows where subject_race or officer_race is "unknown"
-cleaned_data <- cleaned_data[!(cleaned_data$subject_race == "unknown" | cleaned_data$officer_race == "unknown"), ]
-```
-
-# Visualization
-
-## Bar Plot
-```{r}
-ggplot(cleaned_data, aes(x = subject_race)) +
-  geom_bar(fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Police Stops by Subject Race", x = "Subject Race", y = "Count") +
-  theme_minimal()
-```
-
-The above chart shows the distribution of police stops by subject race, with Black subjects having the highest count, followed by Hispanic and White subjects. The number of stops for Asians and Other races is significantly lower in comparison.
-
-```{r}
-ggplot(cleaned_data, aes(x = officer_race)) +
-  geom_bar(fill = "coral", color = "black") +
-  labs(title = "Distribution of Police Stops by Officer Race", x = "Officer Race", y = "Count") +
-  theme_minimal()
-```
-
-The above chart illustrates the distribution of police stops by officer race. It shows that white officers are involved in the highest number of police stops, followed by Hispanic and Black officers. Asian officers are involved in a relatively low number of stops, and the "other" category has an almost negligible count.
-
-## Violin Plot
-```{r}
-ggplot(cleaned_data, aes(x = subject_race, y = subject_age, fill = subject_sex)) +
-  geom_violin(scale = "width", trim = FALSE) +
-  geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
-  labs(title = "Distribution of Subject Age by Race and Gender",
-       x = "Subject Race", y = "Subject Age", fill = "Subject Gender") +
-  theme_minimal()
-```
-
-This violin plot illustrates distribution of subject age across different racial groups. The wider parts of the violin indicate higher densities of points; the narrow part indicates low-density concentrations for points at a certain age. For the four groups represented, the median age is mainly between 20 and 40 years, with expanding age variations above and below this range.
-
-## Box Plot
-```{r}
-ggplot(cleaned_data, aes(x = officer_race, y = officer_age, fill = officer_race)) +
-  geom_boxplot() +
-  labs(title = "Age Distribution by Officer Race", x = "Officer Race", y = "Officer Age") +
-  theme_minimal()
-```
-
-The box plot shows distribution of subject age across different racial groups. The median age for all groups is somewhere in the early and mid-40s; Black officers are the exception, with a little bit higher median age than others in all the groups. Asian among all and Hispanic officers demonstrate narrower distributions in terms of age, with most officers being close to age 40. The variations among white and black officers are the largest in regard to age, with older officers being older and younger ones not being younger, as seen from the wider age range. Outliers also exist with respect to age, especially for Asian and White officers, indicating an existence of cases of age concentration towards the upper side of the spectrum. 
-
-```{r}
-# Assuming your dataset is called 'arrest_data' and has columns: OfficerGender, OfficerAge, and SubjectRace
-ggplot(cleaned_data, aes(x = officer_age, fill = subject_race)) +
-  geom_bar(position = "fill") +
-  facet_wrap(~ officer_sex) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(title = "Proportion of Subject Race by Officer Age and Gender",
-       x = "Officer Age", y = "Proportion of Subjects Arrested",
-       fill = "Subject Race") +
-  theme_minimal()
-```
-
-## Heatmap
-```{r}
-# Create a table of counts for subject race and officer race
-race_correlation <- as.data.frame(table(cleaned_data$subject_race, cleaned_data$officer_race))
-```
-
-```{r}
-# Plot heatmap
-ggplot(race_correlation, aes(x = Var1, y = Var2, fill = Freq)) +
-  geom_tile(color = "black") +  # Add black borders
-  scale_fill_gradient(low = "white", high = "lightblue") +  # Subtle color scheme
-  labs(title = "Correlation between Subject and Officer Race", 
-       x = "Subject Race", 
-       y = "Officer Race", 
-       fill = "Count") +
-  theme_minimal()
-```
-
-The heatmap reveals the correlation between officer race and the race of subjects they interacted with. Darker blue colors signify greater frequency of occurrences. The White officers significantly interacted with Black subjects. Interaction with subjects from among the other officer races shows weaker correlations, evidenced by the lighter red coloration of the cells in the matrix. Hispanic officers tend to stop more Hispanic subjects, while other race combinations occur less frequently, indicating potential racial correlations in police stops.
-  
-# Hypothesis Testing 
-```{r}
-# Ensuring subject_race and officer_race are factors
-cleaned_data$subject_race <- as.factor(cleaned_data$subject_race)
-cleaned_data$officer_race <- as.factor(cleaned_data$officer_race)
-```
-
-*Disclaimer: Our dataset contained only cases where arrests were made (i.e., the arrest_made column only has "TRUE" values). The lack of variation (no FALSE values in arrest_made) made it hard to explore different hypotheses.*
-
-However, we still did proceed with Chi-Square and ANOVA tests to explore relationships between subject race and officer race. 
-
-## Chi - Square Test
-
-*Null Hypothesis (H₀)*: There is no association between the subject's race and the officer's race during police stops where arrests were made.
-
-*Alternative Hypothesis (H₁)*: There is a significant association between the subject's race and the officer's race during police stops where arrests were made.
-
-```{r}
-# Chi-Square test for association between subject_race and officer_race
-chisq_result <- chisq.test(table(cleaned_data$subject_race, cleaned_data$officer_race))
-
-print(chisq_result)
-```
-
-The Chi-Square test was performed to assess whether there is an association between subject race and officer race.
-
-*Note: The warning sign typically occurs when the expected frequencies in some categories are very low. The test can still provide meaningful insights, but we keep limitation in mind.*
-
-The *p-value* is *extremely small* (less than 0.05), hence we *reject* the *null hypothesis*.
-
-There is a significant association between subject race and officer race. It implies that an officer's race may influence the decision to arrest subjects based on their race.
-
-## ANOVA Test
-
-*Null Hypothesis (H₀)*: There is no significant effect of subject race, officer race, or their interaction on the likelihood of arrests during police stops.
-
-*Alternative Hypothesis (H₁)*: Subject race, officer race, or their interaction has a significant effect on the likelihood of arrests during police stops. 
-
-```{r}
-# Performing ANOVA to check if officer race impacts subject race in determining arrests
-anova_result <- aov(officer_age ~ subject_race * officer_race, data = cleaned_data)
-
-summary(anova_result)
-```
-
-Since the *p-values* for subject race, officer race, and their interaction are all *highly significant* (p < 2e-16), we *reject the null hypothesis*. 
-
-Thus, we conclude that there is strong evidence to suggest that the race of the subject, the race of the officer, and the interaction between the two significantly impact the outcome of arrests during police stops.
-
-## Chi-square tets
-
-Null Hypothesis (H₀): There is no significant association between the gender of the officer and the race of the arrested subject.
-
-Alternative Hypothesis (H₁): There is a significant association between the gender of the officer and the race of the arrested subject.
-
-```{r}
-# Chi-Square test for association between officer_sex and subject_race
-
-chisq_result <- chisq.test(table(cleaned_data$officer_sex, cleaned_data$subject_race))
-
-print(chisq_result)
-```
-Since the *p-values* is very small (less than 0.05), we *reject the null hypothesis*. 
-
-Thus, there is a significant association between the gender of the officer and the race of the arrested subject. This suggests that the likelihood of arrest may vary depending on the officer's gender in relation to the subject's race.
