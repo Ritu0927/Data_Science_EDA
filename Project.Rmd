@@ -313,3 +313,145 @@ ggplot(top_race_per_violation, aes(x = violation, y = count, fill = violation)) 
   scale_fill_brewer(palette = "Set3")
 ```
 The above bar plot shows the subject race violating specific rules highest for each type of violation.
+
+# Hypothesis Testing 
+
+```{r}
+# Ensuring subject_race and officer_race are factors
+cleaned_data$subject_race <- as.factor(cleaned_data$subject_race)
+cleaned_data$officer_race <- as.factor(cleaned_data$officer_race)
+```
+
+**Null Hypothesis (H₀)**: There is no significant effect of subject race, officer race, and their interaction on the likelihood of arrests during police stops.
+
+**Alternative Hypothesis (H₁)**:  There is significant effect of subject race, officer race, and their interaction on the likelihood of arrests during police stops.
+
+## Chi - Square Test For Likelihood of Arrest
+
+```{r}
+# Chi-Square test for association between subject_race and officer_race
+chisq_result <- chisq.test(table(final_data$subject_race, final_data$officer_race))
+print(chisq_result)
+```
+The Chi-Square test was performed to assess the significant effect on likelihood of arrests during police stops.
+
+**Note:** The warning sign typically occurs when the expected frequencies in some categories are very low. The test can still provide meaningful insights, but we keep limitation in mind.
+
+The **p-value** is **extremely small** (less than 0.05), hence we **reject** the **null hypothesis**.
+
+There is a significant association between subject race and officer race. It implies that an officer's race may influence the decision to arrest subjects based on their race.
+
+## ANOVA Test For Likelihood of Arrest
+
+```{r}
+anova_result <- aov(officer_age ~ subject_race * officer_race, data = final_data)
+summary(anova_result)
+```
+
+The ANOVA test was performed to assess the significant effect on likelihood of arrests during police stops.
+
+Since the **p-values** for subject race, officer race, and their interaction are all **highly significant** (p < 2e-16), we **reject** the null **hypothesis**. 
+
+Thus, we conclude that there is strong evidence to suggest that the race of the subject, the race of the officer, and their interaction between the two significantly impact the outcome of arrests during police stops.
+
+## Post - HOC Test
+
+Since the ANOVA result is significant, we perform a Tukey’s HSD to see which specific groups (combinations of subject race and officer race) have significant differences in the likelihood of arrests.
+
+```{r}
+tukey_result <- TukeyHSD(anova_result)
+print(tukey_result)
+```
+The post-hoc Tukey's HSD test reveals specific racial group differences, notably that African Americans (as both subjects and officers) face significantly different arrest likelihoods compared to other groups, indicating disparities in arrest outcomes based on race.
+
+```{r}
+ggplot(final_data, aes(x = subject_race, fill = officer_race)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Distribution of Arrests by Subject Race and Officer Race",
+       x = "Subject Race", y = "Count of Arrests") +
+  theme_minimal() +
+  facet_wrap(~ arrest_made)
+```
+
+
+# Hypothesis Testing 
+
+```{r}
+# Ensuring subject_race and officer_race are factors
+cleaned_data$subject_race <- as.factor(cleaned_data$subject_race)
+cleaned_data$officer_race <- as.factor(cleaned_data$officer_race)
+```
+
+**Null Hypothesis (H₀)**: There is no significant effect of subject race, officer race, and their interaction on the likelihood of arrests during police stops.
+
+**Alternative Hypothesis (H₁)**:  There is significant effect of subject race, officer race, and their interaction on the likelihood of arrests during police stops.
+
+## Chi - Square Test For Likelihood of Arrest
+
+```{r}
+# Chi-Square test for association between subject_race and officer_race
+chisq_result <- chisq.test(table(final_data$subject_race, final_data$officer_race))
+print(chisq_result)
+```
+The Chi-Square test was performed to assess the significant effect on likelihood of arrests during police stops.
+
+**Note:** The warning sign typically occurs when the expected frequencies in some categories are very low. The test can still provide meaningful insights, but we keep limitation in mind.
+
+The **p-value** is **extremely small** (less than 0.05), hence we **reject** the **null hypothesis**.
+
+There is a significant association between subject race and officer race. It implies that an officer's race may influence the decision to arrest subjects based on their race.
+
+## ANOVA Test For Likelihood of Arrest
+
+```{r}
+anova_result <- aov(officer_age ~ subject_race * officer_race, data = final_data)
+summary(anova_result)
+```
+
+The ANOVA test was performed to assess the significant effect on likelihood of arrests during police stops.
+
+Since the **p-values** for subject race, officer race, and their interaction are all **highly significant** (p < 2e-16), we **reject** the null **hypothesis**. 
+
+Thus, we conclude that there is strong evidence to suggest that the race of the subject, the race of the officer, and their interaction between the two significantly impact the outcome of arrests during police stops.
+
+## Post - HOC Test
+
+Since the ANOVA result is significant, we perform a Tukey’s HSD to see which specific groups (combinations of subject race and officer race) have significant differences in the likelihood of arrests.
+
+```{r}
+tukey_result <- TukeyHSD(anova_result)
+print(tukey_result)
+```
+The post-hoc Tukey's HSD test reveals specific racial group differences, notably that African Americans (as both subjects and officers) face significantly different arrest likelihoods compared to other groups, indicating disparities in arrest outcomes based on race.
+
+```{r}
+ggplot(final_data, aes(x = subject_race, fill = officer_race)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Distribution of Arrests by Subject Race and Officer Race",
+       x = "Subject Race", y = "Count of Arrests") +
+  theme_minimal() +
+  facet_wrap(~ arrest_made)
+```
+
+
+**Null Hypothesis (H₀)**: There is no significant association between the gender of the officer and the race of the arrested subject.
+
+**Alternative Hypothesis (H₁)**: There is a significant association between the gender of the officer and the race of the arrested subject.
+
+## Chi - Square Test For Officer's Gender and Subject's Race
+
+```{r}
+chisq_result <- chisq.test(table(final_data$officer_sex, final_data$subject_race))
+print(chisq_result)
+```
+Since the **p-values** is very small (less than 0.05), we **reject the null hypothesis**. 
+
+Thus, there is a significant association between the gender of the officer and the race of the arrested subject. This suggests that the likelihood of arrest may vary depending on the officer's gender in relation to the subject's race.
+
+```{r}
+ggplot(final_data, aes(x = officer_sex, fill = subject_race)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Distribution of Arrests by Officer Gender and Subject Race",
+       x = "Officer Gender", y = "Count of Arrests", fill = "Subject Race") +
+  theme_minimal()
+```
