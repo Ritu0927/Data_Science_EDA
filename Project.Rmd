@@ -80,7 +80,7 @@ The main purpose of EDA is to help look at data before making any assumptions. I
 
 Moreover, EDA validates assumptions, a process analogous to literature review and theoretical grounding in academic research. It ensures that the initial assumptions made about the dataset withstand scholarly scrutiny, providing a robust foundation for subsequent analyses.
 
-## Glimplse of Dataset
+## Glimpse of Dataset
 
 ```{r}
 data=read.csv("il_chicago_2023_01_26.csv")
