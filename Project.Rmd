@@ -442,16 +442,16 @@ ggplot(final_data, aes(x = officer_sex, fill = subject_race)) +
 
 Overall analysis conducted helped us answer our SMART questions, and there is indication of a significant pattern in racial and demographic disparities of police stops in Chicago. The racial inequality in the probability of a stop and officer demographics is quite clear.
 
-**Racial Distribution:** African American subjects experience the highest number of police stops, followed by Hispanic/Latino and Caucasian subjects, with Asian/Pacific Islanders experiencing the fewest stops. Similarly, On the other hand, Caucasian officers are involved in the most stops, followed by Hispanic/Latino and African American officers. 
+*Racial Distribution:* African American subjects experience the highest number of police stops, followed by Hispanic/Latino and Caucasian subjects, with Asian/Pacific Islanders experiencing the fewest stops. Similarly, On the other hand, Caucasian officers are involved in the most stops, followed by Hispanic/Latino and African American officers. 
 
-**Age and Demographics:** African American and Hispanic/Latino subjects predominantly fall within a 30-40 age range, whereas Asian/Pacific Islanders show a broader age spread.
+*Age and Demographics:* African American and Hispanic/Latino subjects predominantly fall within a 30-40 age range, whereas Asian/Pacific Islanders show a broader age spread.
 The officer age distribution aligns similarly across racial lines.
 
-**Violation Type:** Filtering top 10 violations throughout the police stops, reveals that certain racial groups experience more frequent stops for quite few violations. Though we are not concluding a causality here because this relationship requires further analysis to clarify causative factors.
+*Violation Type:* Filtering top 10 violations throughout the police stops, reveals that certain racial groups experience more frequent stops for quite few violations. Though we are not concluding a causality here because this relationship requires further analysis to clarify causative factors.
 
-**Gender Influence:** Significant association between officer gender and subject race was found, indicating that the likelihood of arrest varies across these variables. Visualization further supported this finding.
+*Gender Influence:* Significant association between officer gender and subject race was found, indicating that the likelihood of arrest varies across these variables. Visualization further supported this finding.
 
-**Note:** Due to the observational nature of the data, we cannot infer causality.
+*Note:* Due to the observational nature of the data, we cannot infer causality.
  There may be unmeasured co founders that influence these patterns, limiting
  our ability to draw definitive conclusions about bias.
 
@@ -470,3 +470,4 @@ The officer age distribution aligns similarly across racial lines.
 [6] Codecademy Team, Exploratory Data Analysis: Data Visualization, Retrieved on Oct 31,2023; https://www.codecademy.com/article/eda-data-visualization
 
 [7] How do you formulate and test hypotheses based on your exploratory data analysis? (2023, August 25). https://www.linkedin.com/advice/1/how-do-you-formulate-test-hypotheses#:~:text=After%20exploratory%20data%20analysis%2C%20formulating,supporting%20or%20rejecting%20the%20hypothesis.
+
