@@ -1,0 +1,473 @@
+---
+title: "Uncovering Racial and Demographic Trends in Chicago Police Stops: An Exploratory Analysis"
+author: "Team 3"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: true
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r basic_libraries, include=FALSE}
+library(ezids)
+library(ggplot2)
+library(dplyr)
+library(leaflet)
+```
+
+# Introduction 
+
+Many of us have experienced being stopped by a police officer at least once, whether for a minor infraction or a more serious reason. Those who haven’t yet been stopped might consider themselves particularly responsible drivers. To better understand the factors leading to police stops and subsequent outcomes, such as arrests, our team chose to analyze this topic. Through our analysis, we aim to explore patterns and factors associated with police stops, providing insight into the circumstances and potential biases that contribute to these events.
+
+The Chicago Police Stops dataset, a part of the Stanford Open Policing Project, offers an in-depth look into police stop practices in Chicago, with a focus on geographic, racial, and demographic patterns. As part of Stanford's broader initiative to document public interactions with police, this dataset presents a repository of data detailing various aspects of police stops. It captures information on both individuals stopped and the officers involved, recording characteristics such as race, age, gender, and outcomes of the stops, including searches, arrests, and the nature of the violations. The dataset provides a foundation to explore how factors like race, gender, type of violation, and officer demographics may impact the likelihood of being stopped, searched, or arrested during these encounters.
+
+## Source of the Dataset
+
+This dataset comes from the **Stanford Open Policing Project** **[1]**. The variables in the dataset include:
+
+Variable |  Definition  
+  :-:    |  :-- 
+location | The location where the stop occurred
+lat | The latitude of location
+lng | The longitude of location
+subject_race |	The race of the person stopped
+subject_age | The age of the person stopped 
+subject_gender | The gender of the person stopped
+officer_race | The race of the officer conducting the stop
+officer_age |	The age of the officer 
+officer_gender | The gender of the officer stopping
+search_made |	Whether a search was conducted during the stop 
+arrest_made |	Whether an arrest was made during the stop 
+violation |	The violation that prompted the stop
+
+## SMART Framework Questions
+
+The SMART framework was popularized by George T. Doran in a 1981 paper in Management Review. And we use this framework in our analysis to set goals that are clear, attainable, and meaningful.
+
+**Specific:** The objective should be clear and state who will do what 
+
+**Measurable:** The objective should include how the action will be measured 
+
+**Achievable:** The objective should be realistic and attainable 
+
+**Relevant:** The objective should make sense and fit the purpose 
+
+**Time-bound:** The objective should include a timeline for expected results **[2]**
+
+We have leverage the understanding of what a SMART question is and poured it into the following questions to be answered as part of our analysis;
+
+**1)** How do the subject's race and the officer's race influence the likelihood of arrest during police stops in Chicago, as observed in the dataset ?
+
+**2)** How does the officer's gender influence the likelihood of arresting individuals of different races during police stops in Chicago, as measured by the association between officer gender and subject race in the arrest dataset?
+
+## Exploratory Data Analysis 
+
+In the scholarly realm of data analysis, Exploratory Data Analysis (EDA) stands as a pivotal phase, akin to the preliminary investigations conducted by a seasoned researcher before embarking on a comprehensive study. Picture this phase as the initial survey of an unexplored scientific landscape, where the analyst endeavors to unearth latent patterns, identify anomalies, test hypotheses, and validate assumptions through a meticulous examination of summary statistics and graphical representations.
+
+Exploratory Data Analysis refers to the critical process of performing initial investigations on data so as to discover patterns,to spot anomalies,to test hypothesis and to check assumptions with the help of summary statistics and graphical representations.**[3]**
+
+The main purpose of EDA is to help look at data before making any assumptions. It can help identify obvious errors, as well as better understand patterns within the data, detect outliers or anomalous events, find interesting relations among the variables.**[4]**
+
+Moreover, EDA validates assumptions, a process analogous to literature review and theoretical grounding in academic research. It ensures that the initial assumptions made about the dataset withstand scholarly scrutiny, providing a robust foundation for subsequent analyses.
+
+## Glimpse of Dataset
+
+```{r}
+data=read.csv("il_chicago_2023_01_26.csv")
+head(data, 5)
+```
+
+## Structure and Summary of Dataset
+
+```{r}
+str(data)
+```
+
+```{r}
+xkablesummary(data, title = "Summary of Dataset")
+```
+# Cleaning Dataset
+```{r}
+data2 <- data[!(data$subject_race %in% c("unknown", "other") | data$officer_race %in% c("unknown", "other")), ]
+```
+ 
+We removed "unknown" and "other" races from subject_race and officer_race.
+```{r}
+nrow(data2)
+```
+## Null Values
+```{r}
+colSums(is.na(data2))
+```
+```{r}
+#removing missing values
+cleaned_data<-na.omit(data2)
+```
+
+## Post Removal of Null Values
+After we removed the null values, we glimpse into the structure and summary of dataset.
+```{r}
+str(cleaned_data)
+```
+```{r}
+xkablesummary(cleaned_data, title = "Summary of Cleaned Dataset")
+```
+
+Cross checking for null values in dataset.
+```{r}
+colSums(is.na(cleaned_data))
+```
+
+# Detecting & Removing Outliers
+
+An outlier is a data point that significantly deviates from the majority of other data points in a dataset, and in Exploratory Data Analysis (EDA), outliers can significantly affect the interpretation of data by skewing visualizations, impacting statistical measures like the mean, and potentially misleading conclusions drawn from the analysis if not properly identified and handled. Outliers can be unusually high or low compared to the majority of the data points.**[5]**
+
+In this analysis, we specifically focus on identifying outliers in the age groups of officers and subjects. By examining these outliers, we aim to ensure that our findings are robust and representative of the overall dataset, minimizing any undue influence from extreme values. This process strengthens the validity of our analysis by providing a more accurate portrayal of the data trends and relationships.
+
+```{r}
+ggplot(cleaned_data, aes(x = subject_race, y = subject_age)) +
+  geom_boxplot(fill = "lightblue", color = "darkblue") +
+  labs(title = "Subject Age Distribution by Race", x = "Subject Race", y = "Subject Age") +
+  theme_minimal()
+
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = officer_race, y = officer_age)) +
+  geom_boxplot(fill = "lightblue", color = "darkblue") +
+  labs(title = "Subject Age Distribution by Race", x = "Officer Race", y = "Officer Age") +
+  theme_minimal()
+```
+
+```{r}
+cleansubject_age=outlierKD2(cleaned_data,subject_age,rm=TRUE,qqplt = TRUE)
+```
+
+
+```{r}
+cleanofficer_age=outlierKD2(cleaned_data,officer_age,rm=TRUE,qqplt = TRUE)
+```
+
+**'outlierKD2'** has identified and removed outliers, but it did not actually drop the rows from the dataframe. The outlierKD2 function only returns a modified column but does not update the dataframe in place. We manually remove the rows that contain outliers from cleaned_data dataframe.
+
+```{r}
+
+Q1_subject <- quantile(cleaned_data$subject_age, 0.25)
+Q3_subject <- quantile(cleaned_data$subject_age, 0.75)
+IQR_subject <- Q3_subject - Q1_subject
+
+
+lower_bound_subject <- Q1_subject - 1.5 * IQR_subject
+upper_bound_subject <- Q3_subject + 1.5 * IQR_subject
+
+
+cleaned_data <- cleaned_data[cleaned_data$subject_age >= lower_bound_subject & cleaned_data$subject_age <= upper_bound_subject, ]
+```
+
+```{r}
+Q1_officer <- quantile(cleaned_data$officer_age, 0.25)
+Q3_officer <- quantile(cleaned_data$officer_age, 0.75)
+IQR_officer <- Q3_officer - Q1_officer
+
+lower_bound_officer <- Q1_officer - 1.5 * IQR_officer
+upper_bound_officer <- Q3_officer + 1.5 * IQR_officer
+
+cleaned_data <- cleaned_data[cleaned_data$officer_age >= lower_bound_officer & cleaned_data$officer_age <= upper_bound_officer, ]
+```
+
+## Outliers Are Removed
+```{r}
+nrow(cleaned_data)
+```
+
+## Extreme Values Removed
+```{r}
+summary(cleaned_data$subject_age)
+```
+
+```{r}
+summary(cleaned_data$officer_age)
+```
+
+```{r}
+top_violations <- cleaned_data %>%
+  count(violation, sort = TRUE) %>%    
+  top_n(10, n)                        
+
+
+final_data <- cleaned_data %>%
+  filter(violation %in% top_violations$violation)
+```
+
+We filtered the dataset to retain records of top 10 violations.
+
+```{r}
+str(final_data)
+```
+
+```{r}
+head(final_data, 10)
+```
+
+```{r}
+print(unique(final_data$violation))
+```
+
+# Visualization
+
+As part of our analysis, we first pre-processed the data to ensure its integrity and completeness, establishing a reliable foundation for subsequent analysis and visualization. With a clean and well-structured dataset, we are now prepared to delve into data visualization and exploration to uncover meaningful patterns and insights.
+
+Data visualization is a crucial element of Exploratory Data Analysis (EDA), offering a way for data analysts to engage visually with the data, which aids in understanding the relationships between variables and identifying potential trends. By creating visual representations, we could effectively interpret the dataset’s underlying structure, facilitating a more intuitive and insightful analysis.**[6]**
+
+## Bar Plot
+```{r}
+ggplot(final_data, aes(x = subject_race)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Police Stops by Subject Race", x = "Subject Race", y = "Count") +
+  theme_minimal()
+```
+
+The above bar plot shows the distribution of police stops by subject race, with African/American subjects having the highest count of arrests, followed by Hispanic/Latino and Caucasian subjects. The number of stops for Asian/Pacific Islander is significantly lower in comparison.
+
+```{r}
+ggplot(final_data, aes(x = officer_race)) +
+  geom_bar(fill = "coral", color = "black") +
+  labs(title = "Distribution of Police Stops by Officer Race", x = "Officer Race", y = "Count") +
+  theme_minimal()
+```
+
+The above bar plot illustrates the distribution of police stops by officer race. It shows that Caucasian officers are involved in the highest number of police stops, followed by Hispanic/Latino and African American officers. Asian/Pacific Islander officers are involved in a relatively low number of stops.
+
+## Violin Plot
+```{r}
+ggplot(final_data, aes(x = subject_race, y = subject_age, fill = subject_race)) +
+  geom_violin(scale = "width", trim = FALSE) +
+  geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
+  labs(title = "Distribution of Subject Age by Race",
+       x = "Subject Race", y = "Subject Age", fill ="Subject_Race") +
+  theme_minimal()
+```
+
+This violin plot showcases distribution of subject age across different racial groups. The wider parts of the violin indicate higher densities of points; the narrow part indicates low-density concentrations for points at a certain age. For the four groups represented, the median age is mainly between 30 and 40 years. Asian/Pacific Islander subjects have the widest age spread, with some older outliers, while the Hispanic/Latino subjects have more concentrated and younger age range. 
+
+## Box Plot
+```{r}
+ggplot(final_data, aes(x = officer_race, y = officer_age, fill = officer_race)) +
+  geom_boxplot() +
+  labs(title = "Distribution by Officer Age by Race", x = "Officer Race", y = "Officer Age") +
+  theme_minimal()
+```
+
+The box plot shows distribution of officer age across different racial groups. The median age for all groups is somewhere in the early and mid-40s; African American officers are the exception, with a little bit higher median age than others. Asian/Pacific Islander and Hispanic/Latino officers demonstrate narrower distributions in terms of age, with most officers being close to age 40.  
+
+## Stacked Bar Plot
+```{r}
+ggplot(final_data, aes(x = officer_age, fill = subject_race)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ officer_sex) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Proportion of Subject Race by Officer Age and Gender",
+       x = "Officer Age", y = "Proportion of Subjects Arrested",
+       fill = "Subject Race") +
+  theme_minimal()
+```
+
+The above stacked bar plot shows the proportion of different racial groups arrested by the age and gender of officers. In general, for both female and male officers, younger officers arrested more African-Americans and Hispanics/Latinos while older ones arrested an increased proportion of Caucasians and Asian/Pacific Islanders. Overall, this means that the racial distribution of arrests shifts with the age of the officer and varies slightly by gender.
+
+## Heatmap
+```{r}
+race_correlation <- as.data.frame(table(final_data$subject_race, final_data$officer_race))
+```
+
+```{r}
+ggplot(race_correlation, aes(x = Var1, y = Var2, fill = Freq)) +
+  geom_tile(color = "black") +  
+  scale_fill_gradient(low = "white", high = "lightblue") +  
+  labs(title = "Correlation between Subject and Officer Race", 
+       x = "Subject Race", 
+       y = "Officer Race", 
+       fill = "Count") +
+  theme_minimal()
+```
+
+The heatmap reveals the correlation between officer race and the race of subjects they interacted with. Darker blue colors signify greater frequency of occurrences. The Caucasian officers significantly interacted with African American subjects. Interaction with subjects from among the other officer races shows weaker correlations, evidenced by the lighter blue coloration of the cells in the matrix. Hispanic/Latino officers tend to stop more Hispanic/Latino subjects, while other race combinations occur less frequently, indicating potential racial correlations in police stops.
+
+## Maps
+```{r}
+violation_pal <- colorFactor(palette = "Set3", domain = final_data$violation)
+
+leaflet(data = final_data) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    lng = ~lng, lat = ~lat, 
+    color = ~violation_pal(violation),  
+    popup = ~paste("Violation:", violation, "<br>",
+                   "Subject Age:", subject_age, "<br>",
+                   "Officer Age:", officer_age),
+    radius = 5,
+    stroke = FALSE,
+    fillOpacity = 0.8
+  ) %>%
+  addLegend(
+    position = "bottomright", 
+    pal = violation_pal, 
+    values = ~violation,
+    title = "Violation Type"
+  )
+```
+
+The map above gives us a good view of the top 10 violations across the city.
+
+## Bar Plot
+```{r}
+top_race_per_violation <- final_data %>%
+  group_by(violation, subject_race) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  arrange(desc(count)) %>%
+  slice_max(order_by = count, by = violation, n = 1)
+
+ggplot(top_race_per_violation, aes(x = violation, y = count, fill = violation)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Top Subject Race by Violation",
+       x = "Violation Type",
+       y = "Count") +
+  theme_minimal() +
+  geom_text(aes(label = subject_race), angle = 90, vjust = -0.5, hjust = 0.5) +  
+  theme(axis.text.x = element_blank(),  
+        axis.title.x = element_blank()) +  
+  scale_fill_brewer(palette = "Set3")
+```
+
+The above bar plot shows the subject race violating specific rules the highest, for each type of violation.
+
+# Hypothesis Testing 
+
+In an analysis, a hypothesis is a preliminary assumption or prediction based on existing knowledge, which guides exploration and testing. This testing is typically done through statistical methods such as t-tests for mean comparisons or chi-square tests for categorical data relationships, yielding p-values that indicate whether observed patterns are statistically significant.**[7]**
+
+Hypotheses serve as focal points in EDA, helping to frame specific questions and streamline investigation by directing attention toward the most relevant variables and relationships. Through hypothesis testing, assumptions are rigorously evaluated, allowing for meaningful interpretation and robust insights that align with the project’s objectives. By narrowing the focus, hypotheses provide structure and efficiency to EDA, connecting exploratory analysis with deeper inferential statistics or predictive modeling. This approach ensures that findings are not only descriptive but also actionable, enhancing decision-making and potentially shaping strategic direction.
+
+```{r}
+# Ensuring subject_race and officer_race are factors
+cleaned_data$subject_race <- as.factor(cleaned_data$subject_race)
+cleaned_data$officer_race <- as.factor(cleaned_data$officer_race)
+```
+
+**Null Hypothesis (H₀)**: There is no significant effect of subject race, officer race, and their interaction on the likelihood of arrests during police stops.
+
+**Alternative Hypothesis (H₁)**:  There is significant effect of subject race, officer race, and their interaction on the likelihood of arrests during police stops.
+
+## Chi - Square Test For Likelihood of Arrest
+
+The **Chi-Square Test** is used to analyze the association between two categorical variables. In this case, we examine if there’s a relationship between subject race and officer race in terms of arrest outcomes. Specifically, the test assesses whether arrest likelihood varies significantly across different race pairings
+
+```{r}
+# Chi-Square test for association between subject_race and officer_race
+chisq_result <- chisq.test(table(final_data$subject_race, final_data$officer_race))
+print(chisq_result)
+```
+
+**Note:** The warning sign typically occurs when the expected frequencies in some categories are very low. The test can still provide meaningful insights, but we keep limitation in mind.
+
+The **p-value** is **extremely small** (less than 0.05), hence we **reject** the **null hypothesis**.
+
+There is a significant association between subject race and officer race. It implies that an officer's race may influence the decision to arrest subjects based on their race.
+
+## ANOVA Test For Likelihood of Arrest
+
+While the Chi-Square Test showed an association, it does not reveal how these factors interact with each other or quantify the strength of their effects. **ANOVA**, however, allows us to go further by assessing how strongly each variable and their interactions impact an outcome. 
+
+```{r}
+anova_result <- aov(officer_age ~ subject_race * officer_race, data = final_data)
+summary(anova_result)
+```
+
+Since the **p-values** for subject race, officer race, and their interaction are all **highly significant** (p < 2e-16), we **reject** the null **hypothesis**. 
+
+Thus, we conclude that there is strong evidence to suggest that the race of the subject, the race of the officer, and their interaction between the two significantly impact the outcome of arrests during police stops.
+
+## Post - HOC Test
+
+Since the ANOVA result is significant, we perform a Tukey’s HSD to see which specific groups (combinations of subject race and officer race) have significant differences in the likelihood of arrests. This step is essential because while ANOVA reveals whether there’s an effect, the post-hoc test identifies precisely which groups differ. This adds nuance to our findings, allowing us to understand if certain combinations of subject and officer race lead to significantly different arrest outcomes compared to others.
+
+```{r}
+tukey_result <- TukeyHSD(anova_result)
+print(tukey_result)
+```
+
+The post-hoc Tukey's HSD test reveals specific racial group differences, notably that African Americans (as both subjects and officers) face significantly different arrest likelihoods compared to other groups, indicating disparities in arrest outcomes based on race.
+
+```{r}
+ggplot(final_data, aes(x = subject_race, fill = officer_race)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Distribution of Arrests by Subject Race and Officer Race",
+       x = "Subject Race", y = "Count of Arrests") +
+  theme_minimal() +
+  facet_wrap(~ arrest_made)
+```
+
+**Null Hypothesis (H₀)**: There is no significant association between the gender of the officer and the race of the arrested subject.
+
+**Alternative Hypothesis (H₁)**: There is a significant association between the gender of the officer and the race of the arrested subject.
+
+## Chi - Square Test For Officer's Gender and Subject's Race
+
+In this case, we examine if there’s a relationship between subject race and officer gender in terms of arrest outcomes, hence we conduct a **Chi-Square Test**.
+```{r}
+chisq_result <- chisq.test(table(final_data$officer_sex, final_data$subject_race))
+print(chisq_result)
+```
+Since the **p-values** is very small (less than 0.05), we **reject the null hypothesis**. 
+
+Thus, there is a significant association between the gender of the officer and the race of the arrested subject. This suggests that the likelihood of arrest may vary depending on the officer's gender in relation to the subject's race.
+
+```{r}
+ggplot(final_data, aes(x = officer_sex, fill = subject_race)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Distribution of Arrests by Officer Gender and Subject Race",
+       x = "Officer Gender", y = "Count of Arrests", fill = "Subject Race") +
+  theme_minimal()
+```
+
+# Conclusion of EDA
+
+Overall analysis conducted helped us answer our SMART questions, and there is indication of a significant pattern in racial and demographic disparities of police stops in Chicago. The racial inequality in the probability of a stop and officer demographics is quite clear.
+
+*Racial Distribution:* African American subjects experience the highest number of police stops, followed by Hispanic/Latino and Caucasian subjects, with Asian/Pacific Islanders experiencing the fewest stops. Similarly, On the other hand, Caucasian officers are involved in the most stops, followed by Hispanic/Latino and African American officers. 
+
+*Age and Demographics:* African American and Hispanic/Latino subjects predominantly fall within a 30-40 age range, whereas Asian/Pacific Islanders show a broader age spread.
+The officer age distribution aligns similarly across racial lines.
+
+*Violation Type:* Filtering top 10 violations throughout the police stops, reveals that certain racial groups experience more frequent stops for quite few violations. Though we are not concluding a causality here because this relationship requires further analysis to clarify causative factors.
+
+*Gender Influence:* Significant association between officer gender and subject race was found, indicating that the likelihood of arrest varies across these variables. Visualization further supported this finding.
+
+*Note:* Due to the observational nature of the data, we cannot infer causality.
+ There may be unmeasured co founders that influence these patterns, limiting
+ our ability to draw definitive conclusions about bias.
+
+# References
+
+[1] The Stanford Open Policing Project, openpolicing.stanford.edu.https://openpolicing.stanford.edu/data/
+
+[2] Setting goals and developing specific, measurable, achievable, relevant, and time-bound objectives; https://www.samhsa.gov/sites/default/files/nc-smart-goals-fact-sheet.pdf
+
+[3] Prasad Patil, Published in Towards Data Science (Mar 23,2018), Retrieved on Oct 31,2023; https://towardsdatascience.com/exploratory-data-analysis-8fc1cb20fd15
+
+[4] What is exploratory data analysis?, IBM, Retrieved on Oct 31,2023; https://www.ibm.com/topics/exploratory-data-analysis
+
+[5] Jain, A. (2024, October 19). What do you understand by EDA, Outliers, and Z Score? Medium. https://medium.com/@abhishekjainindore24/what-do-you-understand-by-eda-a634a734e762#:~:text=Exploratory%20Data%20Analysis%20(EDA)%20is,associated%20with%20Exploratory%20Data%20Analysis:
+
+[6] Codecademy Team, Exploratory Data Analysis: Data Visualization, Retrieved on Oct 31,2023; https://www.codecademy.com/article/eda-data-visualization
+
+[7] How do you formulate and test hypotheses based on your exploratory data analysis? (2023, August 25). https://www.linkedin.com/advice/1/how-do-you-formulate-test-hypotheses#:~:text=After%20exploratory%20data%20analysis%2C%20formulating,supporting%20or%20rejecting%20the%20hypothesis.
+
